@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Search Dashboard</title>
+    <style>
+        /* CSS for the spinning loader */
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Movie Search Dashboard</h1>
+        <div>
+            <label for="apiKey">API Key:</label>
+            <input type="text" id="apiKey" placeholder="Enter your OMDB API Key">
+        </div>
+        <div>
+            <label for="movieTitle">Movie Title:</label>
+            <input type="text" id="movieTitle" placeholder="Enter a movie title">
+        </div>
+        <button id="searchButton">Search</button>
+        <div class="loader" id="loader"></div>
+        <div id="error" style="color: red;"></div>
+        <div id="movieResults"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const apiKeyInput = document.getElementById("apiKey");
+            const movieTitleInput = document.getElementById("movieTitle");
+            const searchButton = document.getElementById("searchButton");
+            const loader = document.getElementById("loader");
+            const errorDiv = document.getElementById("error");
+            const movieResultsDiv = document.getElementById("movieResults");
+
+            searchButton.addEventListener("click", () => {
+                const apiKey = apiKeyInput.value.trim();
+                const movieTitle = movieTitleInput.value.trim();
+
+                if (apiKey === "" || movieTitle === "") {
+                    errorDiv.innerText = "Please enter both API Key and Movie Title.";
+                    return;
+                }
+
+                // Clear previous results and errors
+                movieResultsDiv.innerHTML = "";
+                errorDiv.innerText = "";
+                loader.style.display = "block";
+
+                // Fetch data from OMDB API
+                fetch(`https://www.omdbapi.com/?s=${movieTitle}&apikey=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        loader.style.display = "none";
+                        if (data.Error) {
+                            errorDiv.innerText = data.Error;
+                        } else if (data.Search && data.Search.length > 0) {
+                            // Display movie results
+                            data.Search.forEach(movie => {
+                                if (movie.Poster === "N/A") {
+                                    movie.Poster = "placeholder.jpg"; // You can replace with a placeholder image URL
+                                }
+                                const movieCard = document.createElement("div");
+                                movieCard.classList.add("movie-card");
+                                movieCard.innerHTML = `
+                                    <img src="${movie.Poster}" alt="${movie.Title} Poster">
+                                    <h2>${movie.Title} (${movie.Year})</h2>
+                                    <a href="https://www.imdb.com/title/${movie.imdbID}" target="_blank">More Details</a>
+                                `;
+                                movieResultsDiv.appendChild(movieCard);
+                            });
+                        } else {
+                            errorDiv.innerText = "No results found.";
+                        }
+                    })
+                    .catch(error => {
+                        loader.style.display = "none";
+                        errorDiv.innerText = "An error occurred while fetching data.";
+                    });
+            });
+        });
+    </script>
+</body>
+</html>
